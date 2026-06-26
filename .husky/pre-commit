@@ -1,0 +1,3 @@
+echo "🔍 [pre-commit] Running ESLint & Prettier on staged files..."
+bunx lint-staged
+echo "✅ [pre-commit] Staged files are clean. Proceeding with commit."

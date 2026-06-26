@@ -1,0 +1,9 @@
+echo "🚀 [pre-push] Verifying the whole project before push..."
+
+echo "  → Running ESLint..."
+bun run lint
+
+echo "  → Checking Prettier formatting..."
+bun run format:check
+
+echo "✅ [pre-push] All checks passed. Pushing."
