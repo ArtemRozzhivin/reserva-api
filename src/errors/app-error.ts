@@ -1,0 +1,19 @@
+export class AppError extends Error {
+  readonly statusCode: number;
+  readonly code: string;
+  readonly isOperational = true;
+
+  constructor(message: string, statusCode: number, code: string) {
+    super(message);
+    this.name = new.target.name; // the actual subclass name
+    this.statusCode = statusCode;
+    this.code = code;
+    Error.captureStackTrace?.(this, new.target); // trim constructor frames
+  }
+}
+
+export class NotFoundError extends AppError {
+  constructor(message = "Resource not found") {
+    super(message, 404, "NOT_FOUND");
+  }
+}

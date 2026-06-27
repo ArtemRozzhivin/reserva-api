@@ -14,9 +14,18 @@ Default to using Bun instead of Node.js.
 - Use `bunx <package> <command>` instead of `npx <package> <command>`
 - Bun automatically loads .env, so don't use dotenv.
 
+## Architecture
+
+- **Runtime / platform:** Bun. **HTTP framework:** Express (chosen deliberately for
+  its ecosystem). Bun is the platform; Express handles routing,
+  middleware, and request/response.
+- Run the server with `bun run src/server.ts` (never `node`). Imports may be
+  extensionless — Bun resolves them; Node would not.
+
 ## APIs
 
-- `Bun.serve()` supports WebSockets, HTTPS, and routes. Don't use `express`.
+- HTTP routing/middleware: use **Express** (`app.get`, `app.use`, etc.).
+  `Bun.serve()` is available but we are not using it here.
 - `bun:sqlite` for SQLite. Don't use `better-sqlite3`.
 - `Bun.redis` for Redis. Don't use `ioredis`.
 - `Bun.sql` for Postgres. Don't use `pg` or `postgres.js`.
