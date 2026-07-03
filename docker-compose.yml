@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:17
+    container_name: reserva-db
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: reserva
+      POSTGRES_PASSWORD: reserva
+      POSTGRES_DB: reserva
+    volumes:
+      - reserva_pgdata:/var/lib/postgresql/data
+
+volumes:
+  reserva_pgdata:

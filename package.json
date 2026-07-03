@@ -11,17 +11,22 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "prepare": "husky"
+    "prepare": "husky",
+    "db:format": "bunx prisma format",
+    "db:migrate": "bunx prisma migrate dev",
+    "db:generate:client": "bunx prisma generate"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/bun": "latest",
     "@types/express": "^5.0.6",
+    "dotenv": "^17.4.2",
     "eslint": "^10.5.0",
     "eslint-config-prettier": "^10.1.8",
     "husky": "^9.1.7",
     "lint-staged": "^17.0.8",
     "prettier": "^3.8.4",
+    "prisma": "^7.8.0",
     "typescript-eslint": "^8.62.0"
   },
   "lint-staged": {
@@ -37,6 +42,8 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/client": "^7.8.0",
     "express": "^5.2.1",
     "zod": "^4.4.3"
   }
