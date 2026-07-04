@@ -6,6 +6,8 @@ const envSchema = z.object({
     .default("development"),
   PORT: z.coerce.number().int().positive().default(3000),
   DATABASE_URL: z.string().min(1),
+  ARGONID_TIME_COST: z.coerce.number().int().positive().default(2),
+  ARGONID_MEMORY_COST: z.coerce.number().int().positive().default(19456),
 });
 
 const parsed = envSchema.safeParse(process.env);

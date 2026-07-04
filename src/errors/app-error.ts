@@ -17,3 +17,15 @@ export class NotFoundError extends AppError {
     super(message, 404, "NOT_FOUND");
   }
 }
+
+export class ConflictError extends AppError {
+  constructor(message = "Conflict", code = "CONFLICT") {
+    super(message, 409, code);
+  }
+}
+
+export class ValidationError extends AppError {
+  constructor(message = "Validation failed") {
+    super(message, 400, "VALIDATION_ERROR");
+  }
+}

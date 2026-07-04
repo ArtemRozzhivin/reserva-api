@@ -4,7 +4,7 @@ Milestone tracker. Each milestone lists its concrete steps and completion status
 in [`TECH_SPEC.md`](./TECH_SPEC.md); deferred scope in [`TECH_DEBT.md`](./TECH_DEBT.md).
 
 **Legend:** `[x]` done · `[~]` in progress · `[ ]` not started
-**Current position:** M1 complete → **M2 (Auth) next**.
+**Current position:** **M2 (Auth) in progress** — register slice done; login next.
 
 ---
 
@@ -26,18 +26,18 @@ in [`TECH_SPEC.md`](./TECH_SPEC.md); deferred scope in [`TECH_DEBT.md`](./TECH_D
 
 ## M2 — Auth: register/login, RBAC, refresh tokens
 
-- [ ] Password hashing via `Bun.password` (hash on register, verify on login)
-- [ ] `User` repository (`createUser`, `findByEmail`) over the Prisma singleton
-- [ ] `validate(schema)` Zod middleware factory + register/login schemas
-- [ ] `POST /api/v1/auth/register` (409 on duplicate email)
+- [x] Password hashing via `Bun.password` (argon2id, 19 MiB / t=2) + `argonVerify`
+- [x] `User` repository (`createUser`, `findByEmail`, `findById`) over the Prisma singleton
+- [~] `validate(schema)` Zod middleware factory (+ register schema; login schema pending)
+- [x] `POST /api/v1/auth/register` — normalized email, 409 `EMAIL_TAKEN`, P2002 backstop
 - [ ] `POST /api/v1/auth/login` (enumeration-safe errors)
 - [ ] JWT access tokens (issue + verify)
 - [ ] Auth middleware: verify access token → `req.user`
 - [ ] RBAC: `requireRole('ORGANIZER')` middleware
 - [ ] `RefreshToken` model + migration (revocable, hashed)
 - [ ] `POST /auth/refresh` (rotate) + `POST /auth/logout` (revoke)
-- [ ] Mount the API under `/api/v1`
-- [ ] Add `AppError` subclasses as needed (`ConflictError`, `UnauthenticatedError`, …)
+- [x] Mount the API under `/api/v1`
+- [~] `AppError` subclasses (`NotFoundError`, `ConflictError`, `ValidationError` done; `UnauthenticatedError` pending)
 
 ## M3 — Events CRUD + pagination
 
