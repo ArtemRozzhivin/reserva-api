@@ -12,4 +12,15 @@ const register: RequestHandler = async (req, res) => {
   });
 };
 
-export default { register };
+const login: RequestHandler = async (req, res) => {
+  const { email, password } = req.body;
+
+  const user = await authServices.login({ email, password });
+
+  res.status(200).json({
+    success: true,
+    data: user,
+  });
+};
+
+export default { register, login };

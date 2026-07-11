@@ -8,6 +8,9 @@ const envSchema = z.object({
   DATABASE_URL: z.string().min(1),
   ARGONID_TIME_COST: z.coerce.number().int().positive().default(2),
   ARGONID_MEMORY_COST: z.coerce.number().int().positive().default(19456),
+  JWT_SECRET: z.string().min(32),
+  JWT_EXPIRES_IN: z.string().default("1h"),
+  REFRESH_TOKEN_TTL_DAYS: z.coerce.number().default(7),
 });
 
 const parsed = envSchema.safeParse(process.env);

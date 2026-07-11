@@ -1,7 +1,14 @@
-import { ConflictError } from "../errors/app-error";
+import { ConflictError, UnauthorizedError } from "../errors/app-error";
 import { Prisma } from "../generated/prisma/client";
+import refreshRepository from "../repositories/refresh.repository";
 import userRepository from "../repositories/user.repository";
-import { argonHash } from "../utils/hash";
+import { signToken } from "../utils/access.token";
+import { argonHash, argonVerify } from "../utils/hash";
+import {
+  generateRerfeshToken,
+  hashRefreshToken,
+  refreshTokenTtlMs,
+} from "../utils/refresh.token";
 
 const authServices = {
   async register(data: { email: string; password: string }) {
@@ -26,6 +33,47 @@ const authServices = {
       }
       throw err;
     }
+  },
+
+  async login(data: { email: string; password: string }) {
+    const { email, password } = data;
+
+    const existingUser = await userRepository.findByEmail(email);
+
+    if (!existingUser) {
+      throw new UnauthorizedError("Invalid email or password");
+    }
+
+    if (!existingUser.passwordHash) {
+      throw new UnauthorizedError();
+    }
+
+    const isPasswordRight = await argonVerify(
+      password,
+      existingUser.passwordHash,
+    );
+
+    if (!isPasswordRight) {
+      throw new UnauthorizedError("Invalid email or password");
+    }
+
+    const acessToken = signToken(existingUser);
+    const rawRefreshToken = generateRerfeshToken();
+    const refreshTokenHash = hashRefreshToken(rawRefreshToken);
+
+    await refreshRepository.createRefresh({
+      tokenHash: refreshTokenHash,
+      userId: existingUser.id,
+      expiresAt: refreshTokenTtlMs(),
+    });
+
+    const { passwordHash: _passwordHash, ...spread } = existingUser;
+
+    return {
+      user: spread,
+      acessToken: acessToken,
+      refreshToken: rawRefreshToken,
+    };
   },
 };
 

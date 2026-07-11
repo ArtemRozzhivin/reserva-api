@@ -15,3 +15,14 @@ export const registerSchema = z
       .regex(/[0-9]/, "Password must contain a digit"),
   })
   .strict();
+
+export const loginScema = z
+  .object({
+    email: z
+      .string()
+      .trim()
+      .toLowerCase()
+      .pipe(z.email("Email should be valid email format")),
+    password: z.string().min(1, "Password is required"),
+  })
+  .strict();

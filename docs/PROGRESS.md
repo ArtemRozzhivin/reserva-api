@@ -28,7 +28,7 @@ in [`TECH_SPEC.md`](./TECH_SPEC.md); deferred scope in [`TECH_DEBT.md`](./TECH_D
 
 - [x] Password hashing via `Bun.password` (argon2id, 19 MiB / t=2) + `argonVerify`
 - [x] `User` repository (`createUser`, `findByEmail`, `findById`) over the Prisma singleton
-- [~] `validate(schema)` Zod middleware factory (+ register schema; login schema pending)
+- [x] validate Zod middleware factory (+ register schema; login schema pending)
 - [x] `POST /api/v1/auth/register` — normalized email, 409 `EMAIL_TAKEN`, P2002 backstop
 - [ ] `POST /api/v1/auth/login` (enumeration-safe errors)
 - [ ] JWT access tokens (issue + verify)
@@ -37,7 +37,7 @@ in [`TECH_SPEC.md`](./TECH_SPEC.md); deferred scope in [`TECH_DEBT.md`](./TECH_D
 - [ ] `RefreshToken` model + migration (revocable, hashed)
 - [ ] `POST /auth/refresh` (rotate) + `POST /auth/logout` (revoke)
 - [x] Mount the API under `/api/v1`
-- [~] `AppError` subclasses (`NotFoundError`, `ConflictError`, `ValidationError` done; `UnauthenticatedError` pending)
+- [x] `AppError` subclasses (`NotFoundError`, `ConflictError`, `ValidationError` done; `UnauthenticatedError` pending)
 
 ## M3 — Events CRUD + pagination
 
