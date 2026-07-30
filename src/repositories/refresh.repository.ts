@@ -10,6 +10,17 @@ const refreshRepository = {
       data: payload,
     });
   },
+
+  async findByToken(tokenHash: string) {
+    return await prisma.refreshToken.findUnique({ where: { tokenHash } });
+  },
+
+  async revokeRefresh(payload: { tokenHash: string }) {
+    return await prisma.refreshToken.update({
+      where: { tokenHash: payload.tokenHash },
+      data: { revokedAt: new Date() },
+    });
+  },
 };
 
 export default refreshRepository;

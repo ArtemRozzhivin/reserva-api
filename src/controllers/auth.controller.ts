@@ -23,4 +23,25 @@ const login: RequestHandler = async (req, res) => {
   });
 };
 
-export default { register, login };
+const refresh: RequestHandler = async (req, res) => {
+  const { refreshToken } = req.body;
+
+  const tokens = await authServices.refresh(refreshToken);
+
+  res.status(200).json({
+    success: true,
+    data: tokens,
+  });
+};
+
+const logout: RequestHandler = async (req, res) => {
+  const { refreshToken } = req.body;
+
+  await authServices.logout(refreshToken);
+
+  res.status(200).json({
+    success: true,
+  });
+};
+
+export default { register, login, refresh, logout };

@@ -1,7 +1,7 @@
 # Reserva — Build Progress
 
 Milestone tracker. Each milestone lists its concrete steps and completion status. Design lives
-in [`TECH_SPEC.md`](./TECH_SPEC.md); deferred scope in [`TECH_DEBT.md`](./TECH_DEBT.md).
+in `[TECH_SPEC.md](./TECH_SPEC.md)`; deferred scope in `[TECH_DEBT.md](./TECH_DEBT.md)`.
 
 **Legend:** `[x]` done · `[~]` in progress · `[ ]` not started
 **Current position:** **M2 (Auth) in progress** — register slice done; login next.
@@ -30,11 +30,11 @@ in [`TECH_SPEC.md`](./TECH_SPEC.md); deferred scope in [`TECH_DEBT.md`](./TECH_D
 - [x] `User` repository (`createUser`, `findByEmail`, `findById`) over the Prisma singleton
 - [x] validate Zod middleware factory (+ register schema; login schema pending)
 - [x] `POST /api/v1/auth/register` — normalized email, 409 `EMAIL_TAKEN`, P2002 backstop
-- [ ] `POST /api/v1/auth/login` (enumeration-safe errors)
-- [ ] JWT access tokens (issue + verify)
-- [ ] Auth middleware: verify access token → `req.user`
-- [ ] RBAC: `requireRole('ORGANIZER')` middleware
-- [ ] `RefreshToken` model + migration (revocable, hashed)
+- [x] `POST /api/v1/auth/login` (enumeration-safe errors)
+- [x] JWT access tokens (issue + verify)
+- [x] Auth middleware: verify access token → `req.user`
+- [x] RBAC: `requireRole('ORGANIZER')` middleware
+- [x] `RefreshToken` model + migration (revocable, hashed)
 - [ ] `POST /auth/refresh` (rotate) + `POST /auth/logout` (revoke)
 - [x] Mount the API under `/api/v1`
 - [x] `AppError` subclasses (`NotFoundError`, `ConflictError`, `ValidationError` done; `UnauthenticatedError` pending)

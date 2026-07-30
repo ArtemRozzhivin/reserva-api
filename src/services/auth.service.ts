@@ -57,7 +57,7 @@ const authServices = {
       throw new UnauthorizedError("Invalid email or password");
     }
 
-    const acessToken = signToken(existingUser);
+    const accessToken = signToken(existingUser);
     const rawRefreshToken = generateRerfeshToken();
     const refreshTokenHash = hashRefreshToken(rawRefreshToken);
 
@@ -71,9 +71,56 @@ const authServices = {
 
     return {
       user: spread,
-      acessToken: acessToken,
+      accessToken: accessToken,
       refreshToken: rawRefreshToken,
     };
+  },
+
+  async refresh(rawRefreshToken: string) {
+    const tokenHash = hashRefreshToken(rawRefreshToken);
+    const stored = await refreshRepository.findByToken(tokenHash);
+
+    // Unknown, expired, or already-revoked tokens are all rejected the same way.
+    if (!stored || stored.revokedAt || stored.expiresAt < new Date()) {
+      throw new UnauthorizedError();
+    }
+
+    const user = await userRepository.findById(stored.userId);
+    if (!user) {
+      throw new UnauthorizedError();
+    }
+
+    // Rotate: the presented token is single-use — revoke it, then issue a fresh pair.
+    await refreshRepository.revokeRefresh({ tokenHash });
+
+    const accessToken = signToken(user);
+    const newRawRefreshToken = generateRerfeshToken();
+
+    await refreshRepository.createRefresh({
+      tokenHash: hashRefreshToken(newRawRefreshToken),
+      userId: user.id,
+      expiresAt: refreshTokenTtlMs(),
+    });
+
+    return { accessToken, refreshToken: newRawRefreshToken };
+  },
+
+  async logout(rawRefreshToken: string) {
+    const tokenHash = hashRefreshToken(rawRefreshToken);
+
+    try {
+      await refreshRepository.revokeRefresh({ tokenHash });
+    } catch (err) {
+      // P2025 = row to update not found. Logout is idempotent, so a token that
+      // was never issued / already gone is a no-op, not an error.
+      if (
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === "P2025"
+      ) {
+        return;
+      }
+      throw err;
+    }
   },
 };
 
