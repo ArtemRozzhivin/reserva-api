@@ -41,11 +41,11 @@ in `[TECH_SPEC.md](./TECH_SPEC.md)`; deferred scope in `[TECH_DEBT.md](./TECH_DE
 
 ## M3 — Events CRUD + pagination
 
-- [ ] `Event` model + migration (`capacity`, `availableSeats`, `CHECK` constraints, indexes)
-- [ ] Event repository + service (ownership guard)
-- [ ] `POST` / `PATCH` / `DELETE /events` (organizer-only)
-- [ ] `GET /events` + `GET /events/:id` (public)
-- [ ] Offset pagination (`page`/`limit` + `meta`)
+- [x] `Event` model + migration (`capacity`, `availableSeats`, `CHECK` constraints, indexes)
+- [x] Event repository + service (ownership guard)
+- [x] `POST` / `PATCH` / `DELETE /events` (organizer-only)
+- [x] `GET /events` + `GET /events/:id` (public)
+- [x] Offset pagination (`page`/`limit` + `meta`)
 
 ## M4 — Booking core ★ (the star)
 

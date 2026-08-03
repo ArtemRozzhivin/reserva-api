@@ -30,8 +30,32 @@ purpose. Each entry: **what**, **why deferred**, and **what it'd take** to do it
 
 ### Offset pagination
 
-- v1 ships **offset/limit** pagination. It degrades on deep offsets and can skip/repeat rows
-  under concurrent inserts. Planned upgrade: **cursor (keyset) pagination** on `(startsAt, id)`.
+- **Decision (2026-08-03):** `GET /events` ships **offset/limit** pagination — the service maps
+  `page`/`limit` to `skip = (page - 1) * limit` / `take`, and returns `meta` with
+  `total` + `totalPages`.
+- **Why deferred:** offset is simple, supports "jump to page N," and is perfectly fine at v1
+  scale. Its two known weaknesses don't bite yet:
+  - **Deep-offset cost:** `OFFSET n` makes Postgres walk and discard `n` rows before returning
+    the page, so latency grows with page depth.
+  - **Drift under concurrent writes:** an insert/delete while a client pages can shift rows
+    across page boundaries, causing a row to repeat or be skipped.
+- **What it'd take:** switch to **cursor (keyset) pagination** on `(startsAt, id)` — instead of
+  `OFFSET`, filter `WHERE (startsAt, id) > (:lastStartsAt, :lastId) ORDER BY startsAt, id LIMIT n`.
+  Stays fast at any depth (indexed range scan, no discarded rows) and is drift-free. Costs the
+  ability to jump to an arbitrary page number, so it's the right tool for infinite scroll / very
+  large tables, not for a "page 37" UI.
+
+### Capacity updates after event creation
+
+- **Decision (2026-08-03):** `updateEventSchema` (PATCH `/events/:id`) accepts `title`,
+  `description`, `startsAt` only — **`capacity` is not editable** after creation.
+- **Why deferred:** changing `capacity` means reconciling the stored `availableSeats` counter
+  against existing bookings, under the same lock the booking flow uses. A naive PATCH could
+  violate the `availableSeats <= capacity` invariant (e.g. shrinking capacity below seats
+  already sold). Out of scope until the booking transaction (M4) exists to piggyback on.
+- **What it'd take:** a dedicated, locked operation that (1) locks the event row, (2) computes
+  `seatsSold = capacity - availableSeats`, (3) rejects a new capacity `< seatsSold`, and
+  (4) sets `availableSeats = newCapacity - seatsSold` in the same transaction.
 
 _(More added as the build proceeds — e.g. mock payment instead of a real processor, an
 in-process scheduler vs. a real job queue. Each gets the same what / why / what-it'd-take entry.)_
