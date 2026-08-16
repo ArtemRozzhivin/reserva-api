@@ -14,7 +14,9 @@
     "prepare": "husky",
     "db:format": "bunx prisma format",
     "db:migrate": "bunx prisma migrate dev",
-    "db:generate:client": "bunx prisma generate"
+    "db:generate:client": "bunx prisma generate",
+    "test": "DATABASE_URL=\"postgresql://reserva:reserva@localhost:5432/reserva_test?schema=public\" bun test",
+    "db:test:migrate": "DATABASE_URL=\"postgresql://reserva:reserva@localhost:5432/reserva_test?schema=public\" bunx prisma migrate deploy"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

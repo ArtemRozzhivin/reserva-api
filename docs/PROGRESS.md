@@ -49,10 +49,10 @@ in `[TECH_SPEC.md](./TECH_SPEC.md)`; deferred scope in `[TECH_DEBT.md](./TECH_DE
 
 ## M4 — Booking core ★ (the star)
 
-- [ ] `Booking` model + migration (status enum, `holdExpiresAt`, partial unique index via raw SQL)
-- [ ] Naive booking implementation
-- [ ] Concurrency test — fire K simultaneous bookings, assert no oversell
-- [ ] Fix: transaction + `SELECT … FOR UPDATE` (interactive tx / `$queryRaw`)
+- [x] `Booking` model + migration (status enum, `holdExpiresAt`, partial unique index via raw SQL)
+- [x] Naive booking implementation
+- [x] Concurrency test — fire K simultaneous bookings, assert no oversell
+- [x] Fix: transaction + `SELECT … FOR UPDATE` (interactive tx / `$queryRaw`)
 - [ ] Backstops: `CHECK (availableSeats >= 0)` + partial unique
 - [ ] `confirm` / `cancel` endpoints (state machine)
 - [ ] _(open question #2)_ atomic-update variant for comparison

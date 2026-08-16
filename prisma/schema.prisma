@@ -33,6 +33,7 @@ model User {
   updatedAt     DateTime       @updatedAt @db.Timestamptz(6)
   refreshTokens RefreshToken[]
   events        Event[]
+  bookings      Booking[]
 }
 
 model RefreshToken {
@@ -48,17 +49,40 @@ model RefreshToken {
 }
 
 model Event {
-  id             String   @id @default(uuid()) @db.Uuid
+  id             String    @id @default(uuid()) @db.Uuid
   title          String
   description    String?
-  startsAt       DateTime @db.Timestamptz(6)
+  startsAt       DateTime  @db.Timestamptz(6)
   capacity       Int
   availableSeats Int
-  organizerId    String   @db.Uuid
-  organizer      User     @relation(fields: [organizerId], references: [id], onDelete: Cascade)
-  createdAt      DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt      DateTime @updatedAt @db.Timestamptz(6)
+  organizerId    String    @db.Uuid
+  organizer      User      @relation(fields: [organizerId], references: [id], onDelete: Cascade)
+  createdAt      DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime  @updatedAt @db.Timestamptz(6)
+  bookings       Booking[]
 
   @@index([organizerId])
   @@index([startsAt])
+}
+
+enum BookingStatus {
+  HELD
+  CONFIRMED
+  CANCELLED
+}
+
+model Booking {
+  id            String        @id @default(uuid()) @db.Uuid
+  eventId       String        @db.Uuid
+  event         Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId        String        @db.Uuid
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status        BookingStatus @default(HELD)
+  holdExpiresAt DateTime      @db.Timestamptz(6)
+  createdAt     DateTime      @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime      @updatedAt @db.Timestamptz(6)
+
+  @@index([userId])
+  @@index([eventId])
+  @@index([status, holdExpiresAt])
 }

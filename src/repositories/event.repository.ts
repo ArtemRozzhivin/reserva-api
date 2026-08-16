@@ -1,4 +1,5 @@
 import { prisma } from "../db/prisma";
+import type { Prisma } from "../generated/prisma/client";
 
 const eventRepository = {
   async createEvent(payload: {
@@ -44,6 +45,23 @@ const eventRepository = {
 
   async deleteEvent(eventId: string) {
     return await prisma.event.delete({ where: { id: eventId } });
+  },
+
+  // Lock the event row and read its seat count in one statement. FOR UPDATE makes
+  // any concurrent booking for THIS event wait until we commit/rollback.
+  async lockEvent(eventId: string, tx: Prisma.TransactionClient) {
+    const rows = await tx.$queryRaw<
+      { availableSeats: number }[]
+    >`SELECT "availableSeats" FROM "Event" WHERE "id" = ${eventId}::uuid FOR UPDATE`;
+
+    return rows[0] ?? null;
+  },
+
+  async decrementSeat(eventId: string, tx: Prisma.TransactionClient) {
+    return tx.event.update({
+      where: { id: eventId },
+      data: { availableSeats: { decrement: 1 } },
+    });
   },
 };
 
