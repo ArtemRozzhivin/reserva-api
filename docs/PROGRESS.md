@@ -53,9 +53,9 @@ in `[TECH_SPEC.md](./TECH_SPEC.md)`; deferred scope in `[TECH_DEBT.md](./TECH_DE
 - [x] Naive booking implementation
 - [x] Concurrency test — fire K simultaneous bookings, assert no oversell
 - [x] Fix: transaction + `SELECT … FOR UPDATE` (interactive tx / `$queryRaw`)
-- [ ] Backstops: `CHECK (availableSeats >= 0)` + partial unique
-- [ ] `confirm` / `cancel` endpoints (state machine)
-- [ ] _(open question #2)_ atomic-update variant for comparison
+- [x] Backstops: `CHECK (availableSeats >= 0)` + partial unique
+- [x] `confirm` / `cancel` endpoints (state machine)
+- [x] _(open question #2)_ atomic-update variant for comparison
 
 ## M5 — Hold-expiry background job
 

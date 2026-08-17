@@ -63,6 +63,15 @@ const eventRepository = {
       data: { availableSeats: { decrement: 1 } },
     });
   },
+
+  // Return a seat on cancellation. Atomic increment; the CHECK (availableSeats <=
+  // capacity) is the backstop if a seat is ever returned more times than it was taken.
+  async incrementSeat(eventId: string, tx: Prisma.TransactionClient) {
+    return tx.event.update({
+      where: { id: eventId },
+      data: { availableSeats: { increment: 1 } },
+    });
+  },
 };
 
 export default eventRepository;
