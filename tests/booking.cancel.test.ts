@@ -237,12 +237,18 @@ describe("DELETE /bookings/:id", () => {
     expect(await countActive(event.id)).toBe(1);
   });
 
-  // Known gap: nothing validates that :id is a UUID, so Prisma throws on the
-  // malformed value and the error middleware maps it to 500 INTERNAL.
-  test.todo(
-    "rejects a non-UUID booking id with 400 VALIDATION_ERROR (currently 500)",
-    () => {},
-  );
+  // validateParams(idParamSchema) rejects a malformed :id before it reaches the
+  // service, so a bad id is a clean 400 rather than a Prisma cast error (500).
+  test("rejects a non-UUID booking id with 400 VALIDATION_ERROR", async () => {
+    const { token } = await seedAttendee(0);
+
+    const { status, body } = await readResponse(
+      await cancel("not-a-uuid", token),
+    );
+
+    expect(status).toBe(400);
+    expect(body.error?.code).toBe("VALIDATION_ERROR");
+  });
 });
 
 // --- the race ---------------------------------------------------------------
