@@ -70,6 +70,40 @@ const bookingRepository = {
     });
     return count;
   },
+
+  // Expired holds to reclaim. Bounded by `limit` so one sweep processes a batch;
+  // a later run picks up the rest. Only id + eventId are needed (to return seats).
+  async findExpiredHeld(
+    limit: number,
+    client: Prisma.TransactionClient = prisma,
+  ) {
+    return await client.booking.findMany({
+      where: {
+        status: BookingStatus.HELD,
+        holdExpiresAt: { lt: new Date() },
+      },
+      select: { id: true, eventId: true },
+      take: limit,
+    });
+  },
+
+  // Guarded transition used by the sweeper: only an expired HELD row becomes
+  // CANCELLED. Returns rows changed (1 = this call expired it and owes the seat
+  // back, 0 = it was confirmed/cancelled in the meantime — leave the seat alone).
+  async expireIfHeld(
+    bookingId: string,
+    client: Prisma.TransactionClient = prisma,
+  ) {
+    const { count } = await client.booking.updateMany({
+      where: {
+        id: bookingId,
+        status: BookingStatus.HELD,
+        holdExpiresAt: { lt: new Date() },
+      },
+      data: { status: BookingStatus.CANCELLED },
+    });
+    return count;
+  },
 };
 
 export default bookingRepository;

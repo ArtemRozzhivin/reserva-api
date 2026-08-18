@@ -8,6 +8,8 @@ import {
 import bookingRepository from "../repositories/booking.repository";
 import eventRepository from "../repositories/event.repository";
 
+const SWEEP_BATCH_SIZE = 100;
+
 const bookingService = {
   async book(userId: string, eventId: string) {
     return prisma.$transaction(async (tx) => {
@@ -105,6 +107,26 @@ const bookingService = {
       await eventRepository.incrementSeat(booking.eventId, tx);
 
       return bookingRepository.findById(bookingId, tx);
+    });
+  },
+
+  async sweepExpiredHolds() {
+    const bookings = await bookingRepository.findExpiredHeld(SWEEP_BATCH_SIZE);
+
+    if (bookings.length === 0) return 0;
+
+    return prisma.$transaction(async (tx) => {
+      let released = 0;
+      for (const booking of bookings) {
+        const result = await bookingRepository.expireIfHeld(booking.id, tx);
+
+        if (result === 1) {
+          await eventRepository.incrementSeat(booking.eventId, tx);
+          released++;
+        }
+      }
+
+      return released;
     });
   },
 };

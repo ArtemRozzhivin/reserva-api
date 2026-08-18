@@ -12,6 +12,7 @@ const envSchema = z.object({
   JWT_EXPIRES_IN: z.string().default("1h"),
   REFRESH_TOKEN_TTL_DAYS: z.coerce.number().default(7),
   BOOKING_HOLD_MINUTES: z.coerce.number().int().positive().default(10),
+  HOLD_SWEEP_INTERVAL_MS: z.coerce.number().int().positive().default(60_000),
 });
 
 const parsed = envSchema.safeParse(process.env);

@@ -59,7 +59,7 @@ in `[TECH_SPEC.md](./TECH_SPEC.md)`; deferred scope in `[TECH_DEBT.md](./TECH_DE
 
 ## M5 — Hold-expiry background job
 
-- [ ] Scheduled sweeper cancels expired `HELD` bookings, returns seats (idempotent, lock-safe)
+- [x] Scheduled sweeper cancels expired `HELD` bookings, returns seats (idempotent, lock-safe)
 
 ## M6 — Redis caching + invalidation
 
