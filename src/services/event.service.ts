@@ -1,5 +1,6 @@
 import { ForbiddenError, NotFoundError } from "../errors/app-error";
 import eventRepository from "../repositories/event.repository";
+import eventCache from "../cache/event.cache";
 import type {
   CreateEventInput,
   UpdateEventInput,
@@ -24,34 +25,50 @@ const eventServices = {
   },
 
   async getEvent(eventId: string) {
+    const cachedEvent = await eventCache.getEvent(eventId);
+    if (cachedEvent) return cachedEvent;
+
     const event = await eventRepository.findByEventId(eventId);
     if (!event) {
       throw new NotFoundError("Event not found");
     }
+    await eventCache.setEvent(eventId, event);
     return event;
   },
 
   async listEvents({ page, limit }: { page: number; limit: number }) {
+    const cachedList = await eventCache.getEventList(page, limit);
+
+    if (cachedList) return cachedList;
+
     const skip = (page - 1) * limit;
     const { data, total } = await eventRepository.listEvents({
       skip,
       take: limit,
     });
 
-    return {
+    const result = {
       data,
       meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
     };
+
+    eventCache.setEventList(page, limit, result);
+    return result;
   },
 
   async updateEvent(eventId: string, userId: string, input: UpdateEventInput) {
     const event = await loadOwnedEvent(eventId, userId);
-    return await eventRepository.updateEvent(event.id, input);
+
+    const result = await eventRepository.updateEvent(event.id, input);
+    await eventCache.delEvent(eventId);
+
+    return result;
   },
 
   async deleteEvent(eventId: string, userId: string) {
     const event = await loadOwnedEvent(eventId, userId);
     await eventRepository.deleteEvent(event.id);
+    await eventCache.delEvent(eventId);
   },
 };
 

@@ -63,8 +63,8 @@ in `[TECH_SPEC.md](./TECH_SPEC.md)`; deferred scope in `[TECH_DEBT.md](./TECH_DE
 
 ## M6 — Redis caching + invalidation
 
-- [ ] Redis in Docker (`Bun.redis`)
-- [ ] Cache `GET /events` + availability; invalidate on writes / seat changes
+- [x] Redis in Docker (`Bun.redis`)
+- [x] Cache `GET /events` + availability; invalidate on writes / seat changes
 
 ## M7 — OAuth2 "Sign in with Google"
 

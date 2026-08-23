@@ -1,3 +1,4 @@
+import eventCache from "../cache/event.cache";
 import { env } from "../config/env";
 import { prisma } from "../db/prisma";
 import {
@@ -12,7 +13,7 @@ const SWEEP_BATCH_SIZE = 100;
 
 const bookingService = {
   async book(userId: string, eventId: string) {
-    return prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       const locked = await eventRepository.lockEvent(eventId, tx);
 
       if (!locked) {
@@ -53,6 +54,9 @@ const bookingService = {
 
       return booking;
     });
+
+    await eventCache.delEvent(eventId);
+    return result;
   },
 
   async confirm(userId: string, bookingId: string) {
@@ -80,7 +84,7 @@ const bookingService = {
   },
 
   async cancel(userId: string, bookingId: string) {
-    return prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       const booking = await bookingRepository.findById(bookingId, tx);
 
       if (!booking) {
@@ -108,6 +112,9 @@ const bookingService = {
 
       return bookingRepository.findById(bookingId, tx);
     });
+
+    if (result) await eventCache.delEvent(result.eventId);
+    return result;
   },
 
   async sweepExpiredHolds() {
@@ -115,19 +122,27 @@ const bookingService = {
 
     if (bookings.length === 0) return 0;
 
-    return prisma.$transaction(async (tx) => {
+    const { released, eventIds } = await prisma.$transaction(async (tx) => {
       let released = 0;
+      const touched = new Set<string>();
       for (const booking of bookings) {
         const result = await bookingRepository.expireIfHeld(booking.id, tx);
 
         if (result === 1) {
           await eventRepository.incrementSeat(booking.eventId, tx);
+          touched.add(booking.eventId);
           released++;
         }
       }
 
-      return released;
+      return { released, eventIds: [...touched] };
     });
+
+    for (const eventId of eventIds) {
+      await eventCache.delEvent(eventId);
+    }
+
+    return released;
   },
 };
 

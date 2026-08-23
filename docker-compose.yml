@@ -11,6 +11,11 @@ services:
       POSTGRES_DB: reserva
     volumes:
       - reserva_pgdata:/var/lib/postgresql/data
+  redis:
+    image: redis:8-alpine
+    container_name: reserva-redis
+    ports:
+      - "6379:6379"
 
 volumes:
   reserva_pgdata:
