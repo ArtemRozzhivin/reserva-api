@@ -1,10 +1,12 @@
 import { z } from "zod";
 
+const DEFAULT_PORT = 3000;
+
 const envSchema = z.object({
   NODE_ENV: z
     .enum(["development", "test", "production"])
     .default("development"),
-  PORT: z.coerce.number().int().positive().default(3000),
+  PORT: z.coerce.number().int().positive().default(DEFAULT_PORT),
   DATABASE_URL: z.string().min(1),
   ARGONID_TIME_COST: z.coerce.number().int().positive().default(2),
   ARGONID_MEMORY_COST: z.coerce.number().int().positive().default(19456),
@@ -15,6 +17,12 @@ const envSchema = z.object({
   HOLD_SWEEP_INTERVAL_MS: z.coerce.number().int().positive().default(60_000),
   REDIS_URL: z.string().min(1).default("redis://localhost:6379"),
   REDIS_TTL: z.coerce.number().int().positive().default(30),
+  GOOGLE_CLIENT_ID: z.string().min(1),
+  GOOGLE_CLIENT_SECRET: z.string().min(1),
+  GOOGLE_REDIRECT_URI: z
+    .string()
+    .min(1)
+    .default(`http://localhost:${DEFAULT_PORT}/api/v1/auth/google/callback`),
 });
 
 const parsed = envSchema.safeParse(process.env);

@@ -1,5 +1,6 @@
 import { ConflictError, UnauthorizedError } from "../errors/app-error";
 import { Prisma } from "../generated/prisma/client";
+import type { User } from "../generated/prisma/client";
 import refreshRepository from "../repositories/refresh.repository";
 import userRepository from "../repositories/user.repository";
 import { signToken } from "../utils/access.token";
@@ -9,6 +10,49 @@ import {
   hashRefreshToken,
   refreshTokenTtlMs,
 } from "../utils/refresh.token";
+import { env } from "../config/env";
+
+// Google's responses cross an untyped network boundary, so we declare the
+// contract ourselves from Google's docs.
+type GoogleTokenResponse = {
+  id_token: string;
+  access_token: string;
+  expires_in: number;
+  token_type: string;
+  scope: string;
+};
+
+type GoogleIdTokenPayload = {
+  sub: string;
+  email: string;
+  email_verified: boolean;
+  name?: string;
+};
+
+const buildGoogleAuthUrl = (state: string) => {
+  const params = new URLSearchParams({
+    client_id: env.GOOGLE_CLIENT_ID,
+    redirect_uri: env.GOOGLE_REDIRECT_URI,
+    response_type: "code",
+    scope: "openid email profile",
+    state,
+  });
+
+  return `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
+};
+
+async function issueSession(user: Pick<User, "id" | "email" | "role">) {
+  const accessToken = signToken(user as User);
+  const rawRefreshToken = generateRerfeshToken();
+
+  await refreshRepository.createRefresh({
+    tokenHash: hashRefreshToken(rawRefreshToken),
+    userId: user.id,
+    expiresAt: refreshTokenTtlMs(),
+  });
+
+  return { accessToken, refreshToken: rawRefreshToken };
+}
 
 const authServices = {
   async register(data: { email: string; password: string }) {
@@ -57,23 +101,57 @@ const authServices = {
       throw new UnauthorizedError("Invalid email or password");
     }
 
-    const accessToken = signToken(existingUser);
-    const rawRefreshToken = generateRerfeshToken();
-    const refreshTokenHash = hashRefreshToken(rawRefreshToken);
-
-    await refreshRepository.createRefresh({
-      tokenHash: refreshTokenHash,
-      userId: existingUser.id,
-      expiresAt: refreshTokenTtlMs(),
-    });
-
     const { passwordHash: _passwordHash, ...spread } = existingUser;
 
-    return {
-      user: spread,
-      accessToken: accessToken,
-      refreshToken: rawRefreshToken,
-    };
+    return { user: spread, ...(await issueSession(existingUser)) };
+  },
+
+  googleRedirect(state: string) {
+    return buildGoogleAuthUrl(state);
+  },
+
+  async loginWithGoogle(code: string) {
+    const res = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        code,
+        client_id: env.GOOGLE_CLIENT_ID,
+        client_secret: env.GOOGLE_CLIENT_SECRET,
+        redirect_uri: env.GOOGLE_REDIRECT_URI,
+        grant_type: "authorization_code",
+      }),
+    });
+
+    const { id_token } = (await res.json()) as GoogleTokenResponse;
+
+    const payloadPart = id_token.split(".")[1];
+    if (!payloadPart) {
+      throw new UnauthorizedError("Invalid Google token");
+    }
+
+    const payload = JSON.parse(
+      Buffer.from(payloadPart, "base64url").toString(),
+    ) as GoogleIdTokenPayload;
+
+    if (!payload.email_verified) {
+      throw new UnauthorizedError("Google email not verified");
+    }
+    const email = payload.email.trim().toLowerCase();
+
+    const existing = await userRepository.findByEmail(email);
+    if (existing) {
+      const { passwordHash: _passwordHash, ...safeUser } = existing;
+      return { user: safeUser, ...(await issueSession(existing)) };
+    }
+
+    const created = await userRepository.createUser({
+      email,
+      provider: "GOOGLE",
+      passwordHash: null,
+    });
+
+    return { user: created, ...(await issueSession(created)) };
   },
 
   async refresh(rawRefreshToken: string) {

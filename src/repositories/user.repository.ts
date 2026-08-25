@@ -1,11 +1,12 @@
 import { prisma } from "../db/prisma";
-import type { Role } from "../generated/prisma/enums";
+import type { AuthProvider, Role } from "../generated/prisma/enums";
 
 const userRepository = {
   async createUser(payload: {
     email: string;
-    passwordHash: string;
+    passwordHash: string | null;
     role?: Role;
+    provider?: AuthProvider;
   }) {
     const user = await prisma.user.create({
       data: payload,

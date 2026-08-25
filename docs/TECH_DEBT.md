@@ -57,5 +57,25 @@ purpose. Each entry: **what**, **why deferred**, and **what it'd take** to do it
   `seatsSold = capacity - availableSeats`, (3) rejects a new capacity `< seatsSold`, and
   (4) sets `availableSeats = newCapacity - seatsSold` in the same transaction.
 
+### Google `id_token` signature not verified
+
+- **Decision (2026-08-23):** `loginWithGoogle` decodes the `id_token` payload without verifying
+  its signature against Google's public keys.
+- **Why deferred:** the token is fetched directly from Google's token endpoint over TLS in a
+  server-to-server call, so the channel is already trusted — decoding is safe for this flow.
+- **What it'd take:** fetch Google's JWKS (`https://www.googleapis.com/oauth2/v3/certs`, cached by
+  `kid`), verify the `id_token`'s RS256 signature, and check `iss` / `aud` / `exp`. Needed if a
+  token is ever accepted from a less-trusted path than the direct exchange.
+
+### OAuth `state` not bound to the browser
+
+- **Decision (2026-08-23):** `state` is stored server-side in Redis (single-use), not tied to the
+  initiating browser.
+- **Why deferred:** this blocks forged/guessed callbacks — the common CSRF case — and keeps the
+  flow cookie-free.
+- **What it'd take:** also set `state` in an httpOnly cookie on `/auth/google` and compare the
+  callback's `state` to the cookie. Closes the remaining login-CSRF vector where an attacker
+  supplies their own valid `state` + `code` to the victim.
+
 _(More added as the build proceeds — e.g. mock payment instead of a real processor, an
 in-process scheduler vs. a real job queue. Each gets the same what / why / what-it'd-take entry.)_

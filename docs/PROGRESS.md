@@ -68,7 +68,7 @@ in `[TECH_SPEC.md](./TECH_SPEC.md)`; deferred scope in `[TECH_DEBT.md](./TECH_DE
 
 ## M7 — OAuth2 "Sign in with Google"
 
-- [ ] Google auth flow; link by email; `provider` field
+- [x] Google auth flow; link by email; `provider` field
 
 ## M8 — Hardening + observability
 
