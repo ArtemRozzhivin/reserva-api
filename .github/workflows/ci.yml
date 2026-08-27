@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    # Ephemeral dependencies for the job, reachable at localhost on the runner.
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: reserva
+          POSTGRES_PASSWORD: reserva
+          POSTGRES_DB: reserva_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U reserva -d reserva_test"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+      redis:
+        image: redis:8-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    # Real values for CI. Secrets are throwaway placeholders — nothing here
+    # connects to Google or protects real data; they only satisfy env validation.
+    env:
+      DATABASE_URL: postgresql://reserva:reserva@localhost:5432/reserva_test?schema=public
+      REDIS_URL: redis://localhost:6379
+      JWT_SECRET: ci-only-placeholder-secret-0123456789012345
+      GOOGLE_CLIENT_ID: ci
+      GOOGLE_CLIENT_SECRET: ci
+      GOOGLE_REDIRECT_URI: http://localhost/callback
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: bunx prisma generate
+
+      - name: Apply migrations
+        run: bunx prisma migrate deploy
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Type-check
+        run: bunx tsc --noEmit
+
+      - name: Test
+        run: bun run test
