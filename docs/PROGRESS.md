@@ -72,9 +72,9 @@ in `[TECH_SPEC.md](./TECH_SPEC.md)`; deferred scope in `[TECH_DEBT.md](./TECH_DE
 
 ## M8 — Hardening + observability
 
-- [ ] Rate limiting (`/auth/*`, booking create), `helmet`, CORS, body limits
-- [ ] `pino` structured logging + request id
-- [ ] `/ready` (checks DB + Redis)
+- [x] Rate limiting (`/auth/*`, booking create), `helmet`, CORS, body limits
+- [x] `pino` structured logging + request id
+- [x] `/ready` (checks DB + Redis)
 
 ## M9 — Swagger / OpenAPI
 
