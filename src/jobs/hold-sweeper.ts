@@ -1,4 +1,5 @@
 import { env } from "../config/env";
+import { logger } from "../config/logger";
 import bookingService from "../services/booking.service";
 
 // The "when" half of the sweeper. The "what" (sweepExpiredHolds) lives in the
@@ -22,12 +23,12 @@ export function startHoldSweeper() {
     try {
       const released = await bookingService.sweepExpiredHolds();
       if (released > 0) {
-        console.log(`[hold-sweeper] released ${released} expired hold(s)`);
+        logger.info({ released }, "hold-sweeper released expired holds");
       }
     } catch (error) {
       // A failed sweep must not crash the process; the next tick retries
       // (the operation is idempotent).
-      console.error("[hold-sweeper] sweep failed", error);
+      logger.error({ err: error }, "hold-sweeper sweep failed");
     } finally {
       running = false;
     }

@@ -17,6 +17,11 @@ const envSchema = z.object({
   HOLD_SWEEP_INTERVAL_MS: z.coerce.number().int().positive().default(60_000),
   REDIS_URL: z.string().min(1).default("redis://localhost:6379"),
   REDIS_TTL: z.coerce.number().int().positive().default(30),
+  CORS_ORIGIN: z.string().default("*"),
+  JSON_BODY_LIMIT: z.string().default("16kb"),
+  LOG_LEVEL: z
+    .enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"])
+    .default("info"),
   GOOGLE_CLIENT_ID: z.string().min(1),
   GOOGLE_CLIENT_SECRET: z.string().min(1),
   GOOGLE_REDIRECT_URI: z

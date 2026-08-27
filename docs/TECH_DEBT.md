@@ -77,5 +77,21 @@ purpose. Each entry: **what**, **why deferred**, and **what it'd take** to do it
   callback's `state` to the cookie. Closes the remaining login-CSRF vector where an attacker
   supplies their own valid `state` + `code` to the victim.
 
+### Rate limiting uses an in-memory store
+
+- **Decision (2026-08-23):** `express-rate-limit` runs with its default in-memory store —
+  counters live in the process.
+- **Why deferred:** correct for a single instance; fine for v1.
+- **What it'd take:** a shared store (`rate-limit-redis`, reusing the existing Redis) so limits
+  hold across N instances — otherwise the real limit is N × the configured value.
+
+### Readiness treats Redis as critical
+
+- **Decision (2026-08-23):** `/ready` returns 503 if **either** Postgres or Redis is unreachable.
+- **Why deferred:** matches the spec ("checks DB + Redis") and is simple.
+- **What it'd take:** since Redis is optional infra (fail-open cache), fail readiness only on
+  Postgres and report Redis as "degraded but ready" — so a Redis blip doesn't pull a
+  still-serviceable instance out of rotation.
+
 _(More added as the build proceeds — e.g. mock payment instead of a real processor, an
 in-process scheduler vs. a real job queue. Each gets the same what / why / what-it'd-take entry.)_
