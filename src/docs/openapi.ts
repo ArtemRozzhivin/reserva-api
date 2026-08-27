@@ -53,10 +53,15 @@ const errorAs = (description: string) => ({
   },
 });
 
-const jsonBody = (ref: string) => ({
+const jsonBody = (ref: string, example: Record<string, unknown>) => ({
   required: true,
   content: {
-    "application/json": { schema: { $ref: `#/components/schemas/${ref}` } },
+    "application/json": {
+      schema: { $ref: `#/components/schemas/${ref}` },
+      // An explicit example — without it, Swagger UI auto-generates nonsense
+      // (a random string for `format: email`, filler for min-length, etc.).
+      example,
+    },
   },
 });
 
@@ -88,7 +93,10 @@ export const openApiDocument = {
       post: {
         tags: ["Auth"],
         summary: "Register with email + password",
-        requestBody: jsonBody("RegisterRequest"),
+        requestBody: jsonBody("RegisterRequest", {
+          email: "organizer@example.com",
+          password: "Password123",
+        }),
         responses: {
           "201": ok("Created"),
           "400": errorAs("Validation error"),
@@ -100,7 +108,10 @@ export const openApiDocument = {
       post: {
         tags: ["Auth"],
         summary: "Log in; returns access + refresh tokens",
-        requestBody: jsonBody("LoginRequest"),
+        requestBody: jsonBody("LoginRequest", {
+          email: "organizer@example.com",
+          password: "Password123",
+        }),
         responses: {
           "200": ok("Tokens issued"),
           "401": errorAs("Invalid credentials"),
@@ -111,7 +122,10 @@ export const openApiDocument = {
       post: {
         tags: ["Auth"],
         summary: "Rotate a refresh token for a new pair",
-        requestBody: jsonBody("RefreshRequest"),
+        requestBody: jsonBody("RefreshRequest", {
+          refreshToken:
+            "9f8c7b6a5d4e3f2a1b0c9d8e7f6a5b4c3d2e1f0a9b8c7d6e5f4a3b2c1d0e9f8a",
+        }),
         responses: {
           "200": ok("New token pair"),
           "401": errorAs("Invalid token"),
@@ -122,7 +136,10 @@ export const openApiDocument = {
       post: {
         tags: ["Auth"],
         summary: "Revoke a refresh token (idempotent)",
-        requestBody: jsonBody("RefreshRequest"),
+        requestBody: jsonBody("RefreshRequest", {
+          refreshToken:
+            "9f8c7b6a5d4e3f2a1b0c9d8e7f6a5b4c3d2e1f0a9b8c7d6e5f4a3b2c1d0e9f8a",
+        }),
         responses: { "200": ok("Logged out") },
       },
     },
@@ -158,7 +175,12 @@ export const openApiDocument = {
         tags: ["Events"],
         summary: "Create an event (organizer only)",
         security: [{ bearerAuth: [] }],
-        requestBody: jsonBody("CreateEventRequest"),
+        requestBody: jsonBody("CreateEventRequest", {
+          title: "Summer Night Concert",
+          description: "An open-air live show.",
+          startsAt: "2030-06-01T18:00:00.000Z",
+          capacity: 100,
+        }),
         responses: {
           "201": ok("Created"),
           "401": errorAs("Unauthenticated"),
@@ -192,7 +214,10 @@ export const openApiDocument = {
             schema: { type: "string", format: "uuid" },
           },
         ],
-        requestBody: jsonBody("UpdateEventRequest"),
+        requestBody: jsonBody("UpdateEventRequest", {
+          title: "Summer Night Concert (rescheduled)",
+          startsAt: "2030-06-02T18:00:00.000Z",
+        }),
         responses: {
           "200": ok("Updated"),
           "403": errorAs("Not the owner"),
