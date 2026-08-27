@@ -15,7 +15,79 @@ import {
 const toSchema = (schema: z.ZodType) =>
   z.toJSONSchema(schema, { unrepresentable: "any" }) as Record<string, unknown>;
 
-// Standard envelopes, written once and referenced everywhere.
+const uuid = { type: "string", format: "uuid" } as const;
+const dateTime = { type: "string", format: "date-time" } as const;
+
+// --- Response DTOs (hand-written; must mirror what the API actually returns) ---
+
+// Note: no passwordHash — it is always stripped before leaving the service.
+const userSchema = {
+  type: "object",
+  properties: {
+    id: uuid,
+    email: { type: "string", format: "email" },
+    role: { type: "string", enum: ["ORGANIZER", "ATTENDEE"] },
+    provider: { type: "string", enum: ["LOCAL", "GOOGLE"] },
+    createdAt: dateTime,
+    updatedAt: dateTime,
+  },
+} as const;
+
+const eventSchema = {
+  type: "object",
+  properties: {
+    id: uuid,
+    title: { type: "string" },
+    description: { type: ["string", "null"] },
+    startsAt: dateTime,
+    capacity: { type: "integer" },
+    availableSeats: { type: "integer" },
+    organizerId: uuid,
+    createdAt: dateTime,
+    updatedAt: dateTime,
+  },
+} as const;
+
+const bookingSchema = {
+  type: "object",
+  properties: {
+    id: uuid,
+    eventId: uuid,
+    userId: uuid,
+    status: { type: "string", enum: ["HELD", "CONFIRMED", "CANCELLED"] },
+    holdExpiresAt: dateTime,
+    createdAt: dateTime,
+    updatedAt: dateTime,
+  },
+} as const;
+
+const tokenPairSchema = {
+  type: "object",
+  properties: {
+    accessToken: { type: "string" },
+    refreshToken: { type: "string" },
+  },
+} as const;
+
+const authSessionSchema = {
+  type: "object",
+  properties: {
+    user: { $ref: "#/components/schemas/User" },
+    accessToken: { type: "string" },
+    refreshToken: { type: "string" },
+  },
+} as const;
+
+const pageMetaSchema = {
+  type: "object",
+  properties: {
+    page: { type: "integer" },
+    limit: { type: "integer" },
+    total: { type: "integer" },
+    totalPages: { type: "integer" },
+  },
+} as const;
+
 const errorResponse = {
   type: "object",
   properties: {
@@ -30,7 +102,11 @@ const errorResponse = {
   },
 } as const;
 
-// A JSON-body response with the given data schema under { success, data }.
+// --- helpers ---
+
+const ref = (name: string) => ({ $ref: `#/components/schemas/${name}` });
+
+// A `{ success, data }` response whose data is the given schema (or none).
 const ok = (description: string, data?: Record<string, unknown>) => ({
   description,
   content: {
@@ -46,24 +122,45 @@ const ok = (description: string, data?: Record<string, unknown>) => ({
   },
 });
 
-const errorAs = (description: string) => ({
+// A paginated list response: { success, data: Item[], meta }.
+const okList = (description: string, itemName: string) => ({
   description,
   content: {
-    "application/json": { schema: { $ref: "#/components/schemas/Error" } },
+    "application/json": {
+      schema: {
+        type: "object",
+        properties: {
+          success: { type: "boolean", example: true },
+          data: { type: "array", items: ref(itemName) },
+          meta: ref("PageMeta"),
+        },
+      },
+    },
   },
 });
 
-const jsonBody = (ref: string, example: Record<string, unknown>) => ({
+const errorAs = (description: string) => ({
+  description,
+  content: { "application/json": { schema: ref("Error") } },
+});
+
+const jsonBody = (bodyRef: string, example: Record<string, unknown>) => ({
   required: true,
   content: {
     "application/json": {
-      schema: { $ref: `#/components/schemas/${ref}` },
-      // An explicit example — without it, Swagger UI auto-generates nonsense
-      // (a random string for `format: email`, filler for min-length, etc.).
+      schema: ref(bodyRef),
+      // An explicit example — without it Swagger UI auto-generates nonsense.
       example,
     },
   },
 });
+
+const idParam = {
+  name: "id",
+  in: "path",
+  required: true,
+  schema: uuid,
+} as const;
 
 export const openApiDocument = {
   openapi: "3.1.0",
@@ -81,11 +178,19 @@ export const openApiDocument = {
     },
     schemas: {
       Error: errorResponse,
+      // request DTOs (from Zod)
       RegisterRequest: toSchema(registerSchema),
       LoginRequest: toSchema(loginScema),
       RefreshRequest: toSchema(refreshSchema),
       CreateEventRequest: toSchema(createEventSchema),
       UpdateEventRequest: toSchema(updateEventSchema),
+      // response DTOs (hand-written)
+      User: userSchema,
+      Event: eventSchema,
+      Booking: bookingSchema,
+      AuthSession: authSessionSchema,
+      TokenPair: tokenPairSchema,
+      PageMeta: pageMetaSchema,
     },
   },
   paths: {
@@ -98,7 +203,7 @@ export const openApiDocument = {
           password: "Password123",
         }),
         responses: {
-          "201": ok("Created"),
+          "201": ok("Created", ref("User")),
           "400": errorAs("Validation error"),
           "409": errorAs("Email already registered"),
         },
@@ -107,13 +212,13 @@ export const openApiDocument = {
     "/auth/login": {
       post: {
         tags: ["Auth"],
-        summary: "Log in; returns access + refresh tokens",
+        summary: "Log in; returns the user + access & refresh tokens",
         requestBody: jsonBody("LoginRequest", {
           email: "organizer@example.com",
           password: "Password123",
         }),
         responses: {
-          "200": ok("Tokens issued"),
+          "200": ok("Session", ref("AuthSession")),
           "401": errorAs("Invalid credentials"),
         },
       },
@@ -127,7 +232,7 @@ export const openApiDocument = {
             "9f8c7b6a5d4e3f2a1b0c9d8e7f6a5b4c3d2e1f0a9b8c7d6e5f4a3b2c1d0e9f8a",
         }),
         responses: {
-          "200": ok("New token pair"),
+          "200": ok("New token pair", ref("TokenPair")),
           "401": errorAs("Invalid token"),
         },
       },
@@ -167,7 +272,7 @@ export const openApiDocument = {
           },
         ],
         responses: {
-          "200": ok("A page of events"),
+          "200": okList("A page of events", "Event"),
           "400": errorAs("Bad query"),
         },
       },
@@ -182,7 +287,7 @@ export const openApiDocument = {
           capacity: 100,
         }),
         responses: {
-          "201": ok("Created"),
+          "201": ok("Created", ref("Event")),
           "401": errorAs("Unauthenticated"),
           "403": errorAs("Not an organizer"),
         },
@@ -192,34 +297,23 @@ export const openApiDocument = {
       get: {
         tags: ["Events"],
         summary: "Get one event (public)",
-        parameters: [
-          {
-            name: "id",
-            in: "path",
-            required: true,
-            schema: { type: "string", format: "uuid" },
-          },
-        ],
-        responses: { "200": ok("The event"), "404": errorAs("Not found") },
+        parameters: [idParam],
+        responses: {
+          "200": ok("The event", ref("Event")),
+          "404": errorAs("Not found"),
+        },
       },
       patch: {
         tags: ["Events"],
         summary: "Update an event (owner only)",
         security: [{ bearerAuth: [] }],
-        parameters: [
-          {
-            name: "id",
-            in: "path",
-            required: true,
-            schema: { type: "string", format: "uuid" },
-          },
-        ],
+        parameters: [idParam],
         requestBody: jsonBody("UpdateEventRequest", {
           title: "Summer Night Concert (rescheduled)",
           startsAt: "2030-06-02T18:00:00.000Z",
         }),
         responses: {
-          "200": ok("Updated"),
+          "200": ok("Updated", ref("Event")),
           "403": errorAs("Not the owner"),
           "404": errorAs("Not found"),
         },
@@ -228,14 +322,7 @@ export const openApiDocument = {
         tags: ["Events"],
         summary: "Delete an event (owner only)",
         security: [{ bearerAuth: [] }],
-        parameters: [
-          {
-            name: "id",
-            in: "path",
-            required: true,
-            schema: { type: "string", format: "uuid" },
-          },
-        ],
+        parameters: [idParam],
         responses: {
           "204": { description: "Deleted" },
           "403": errorAs("Not the owner"),
@@ -248,16 +335,9 @@ export const openApiDocument = {
         tags: ["Bookings"],
         summary: "Book a seat (concurrency-safe hold)",
         security: [{ bearerAuth: [] }],
-        parameters: [
-          {
-            name: "id",
-            in: "path",
-            required: true,
-            schema: { type: "string", format: "uuid" },
-          },
-        ],
+        parameters: [idParam],
         responses: {
-          "201": ok("HELD booking created"),
+          "201": ok("HELD booking created", ref("Booking")),
           "409": errorAs("Sold out / already booked"),
         },
       },
@@ -267,16 +347,9 @@ export const openApiDocument = {
         tags: ["Bookings"],
         summary: "Confirm a HELD booking",
         security: [{ bearerAuth: [] }],
-        parameters: [
-          {
-            name: "id",
-            in: "path",
-            required: true,
-            schema: { type: "string", format: "uuid" },
-          },
-        ],
+        parameters: [idParam],
         responses: {
-          "200": ok("Confirmed"),
+          "200": ok("Confirmed", ref("Booking")),
           "409": errorAs("Not held / expired"),
         },
       },
@@ -286,16 +359,9 @@ export const openApiDocument = {
         tags: ["Bookings"],
         summary: "Cancel a booking, returning its seat",
         security: [{ bearerAuth: [] }],
-        parameters: [
-          {
-            name: "id",
-            in: "path",
-            required: true,
-            schema: { type: "string", format: "uuid" },
-          },
-        ],
+        parameters: [idParam],
         responses: {
-          "200": ok("Cancelled"),
+          "200": ok("Cancelled", ref("Booking")),
           "409": errorAs("Already cancelled"),
         },
       },
