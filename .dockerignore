@@ -1,0 +1,19 @@
+# Rebuilt inside the image — never copy the host's copy in.
+node_modules
+src/generated
+
+# Secrets and local-only files must never be baked into the image.
+.env
+.env.*
+
+# VCS, tooling, and noise not needed at runtime.
+.git
+.gitignore
+.husky
+.claude
+*.log
+.DS_Store
+
+# Not needed to run the server.
+tests
+docs

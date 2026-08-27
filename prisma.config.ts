@@ -2,14 +2,17 @@
 // npm install --save-dev prisma dotenv
 import "dotenv/config";
 import { defineConfig } from "prisma/config";
-import { env } from "./src/config/env";
 
+// The Prisma CLI only needs DATABASE_URL. Read it straight from process.env
+// (dotenv loads .env locally) rather than importing the app's env validator —
+// that keeps CLI commands like `generate` from requiring the full runtime env
+// (JWT_SECRET, GOOGLE_*, …), which matters in Docker/CI where those aren't set.
 export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
   },
   datasource: {
-    url: env["DATABASE_URL"],
+    url: process.env.DATABASE_URL,
   },
 });

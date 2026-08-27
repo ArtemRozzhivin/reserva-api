@@ -78,7 +78,7 @@ in `[TECH_SPEC.md](./TECH_SPEC.md)`; deferred scope in `[TECH_DEBT.md](./TECH_DE
 
 ## M9 — Swagger / OpenAPI
 
-- [ ] OpenAPI spec (generated from Zod) served at `/api/v1/docs`
+- [x] OpenAPI spec (generated from Zod) served at `/api/v1/docs`
 
 ## M10 — Docker full stack + CI + deploy
 
