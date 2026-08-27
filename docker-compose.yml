@@ -11,11 +11,53 @@ services:
       POSTGRES_DB: reserva
     volumes:
       - reserva_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U reserva -d reserva"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Cache only — deliberately no volume and persistence off. Everything in here
+  # is derived from Postgres, so losing it costs a cold start, never data.
   redis:
     image: redis:8-alpine
     container_name: reserva-redis
+    restart: unless-stopped
     ports:
       - "6379:6379"
+    command: redis-server --save "" --appendonly no
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # The app image, built from the Dockerfile. Behind the "full" profile so the
+  # plain `docker compose up` still starts only db + redis for local dev (you run
+  # the app with Bun) — `docker compose --profile full up` runs the whole stack.
+  app:
+    build: .
+    container_name: reserva-app
+    profiles: ["full"]
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    # Secrets (JWT_SECRET, GOOGLE_*, …) come from .env; the two URLs below
+    # override it because inside the compose network the app reaches other
+    # services by their service name, not localhost.
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://reserva:reserva@db:5432/reserva?schema=public
+      REDIS_URL: redis://redis:6379
+    # Apply migrations, then start the server.
+    command: ["sh", "-c", "bunx prisma migrate deploy && bun run src/server.ts"]
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
 volumes:
   reserva_pgdata:
