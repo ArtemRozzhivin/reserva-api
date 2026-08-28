@@ -82,8 +82,8 @@ in `[TECH_SPEC.md](./TECH_SPEC.md)`; deferred scope in `[TECH_DEBT.md](./TECH_DE
 
 ## M10 — Docker full stack + CI + deploy
 
-- [ ] Dockerfile for the app; full stack in `docker-compose`
-- [ ] CI (lint + tests on push)
+- [x] Dockerfile for the app; full stack in `docker-compose`
+- [x] CI (lint + tests on push)
 - [ ] Deploy (PaaS + managed Postgres)
 
 ---
